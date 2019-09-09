@@ -13,9 +13,10 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-import torchvision.models as models
+# import torchvision.models as models
 
 import numpy as np
+import resnet
 
 try:
     from apex.parallel import DistributedDataParallel as DDP
@@ -25,10 +26,12 @@ try:
 except ImportError:
     raise ImportError("Please install apex from https://www.github.com/nvidia/apex to run this example.")
 
-model_names = sorted(name for name in models.__dict__
-                     if name.islower() and not name.startswith("__")
-                     and callable(models.__dict__[name]))
+# TODO
+# model_names = sorted(name for name in models.__dict__
+#                      if name.islower() and not name.startswith("__")
+#                      and callable(models.__dict__[name]))
 
+model_names = ['resnet50', 'resnet18']
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
@@ -43,8 +46,10 @@ parser.add_argument('--epochs', default=90, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=256, type=int,
+parser.add_argument('-b', '--batch_size', default=256, type=int,
                     metavar='N', help='mini-batch size per process (default: 256)')
+parser.add_argument('-g', '--group', default=1, type=int,
+                    metavar='N', help='bp tape compression group, smaller is higher compression rate (default: 1)')
 parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
                     metavar='LR', help='Initial learning rate.  Will be scaled by <global batch size>/256: args.lr = args.lr*float(args.batch_size*args.world_size)/256.  A warmup schedule will also be applied over the first 5 epochs.')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
@@ -125,12 +130,15 @@ def main():
     assert torch.backends.cudnn.enabled, "Amp requires cudnn backend to be enabled."
 
     # create model
+    # TODO anchor
     if args.pretrained:
         print("=> using pre-trained model '{}'".format(args.arch))
-        model = models.__dict__[args.arch](pretrained=True)
+        # model = models.__dict__[args.arch](pretrained=True)
+        model = resnet.resnet50(pretrained=True, group=args.group)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = models.__dict__[args.arch]()
+        # model = models.__dict__[args.arch]()
+        model = resnet.resnet50(group=args.group)
 
     if args.sync_bn:
         import apex
@@ -242,6 +250,7 @@ def main():
 
         # remember best prec@1 and save checkpoint
         if args.local_rank == 0:
+            # save ckpt at every epoch
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
             save_checkpoint({
