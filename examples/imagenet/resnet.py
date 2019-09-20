@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
+import torch.nn.functional as F
 from DecompConv2d import DecompConv2d as dconv2d
 
 
@@ -65,11 +66,11 @@ class Bottleneck(nn.Module):
 
     def __init__(self, group, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
-        self.conv1 = conv1x1(inplanes, planes)
+        # self.conv1 = conv1x1(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = conv3x3(planes, planes, stride)
+        # self.conv2 = conv3x3(planes, planes, stride)
         self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = conv1x1(planes, planes * self.expansion)
+        # self.conv3 = conv1x1(planes, planes * self.expansion)
         self.bn3 = nn.BatchNorm2d(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -94,18 +95,21 @@ class Bottleneck(nn.Module):
 
         # TODO
         out = self.dconv1(x, self.weight1.cuda(), 1, 0, self.group)
+        # out = F.conv2d(x, self.weight1.cuda(), stride=1, padding=0)
         # out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
 
         # TODO
         out = self.dconv2(out, self.weight2.cuda(), self.stride, 1, self.group)
+        # out = F.conv2d(out, self.weight2.cuda(), stride=self.stride, padding=1)
         # out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
 
         # TODO
         out = self.dconv3(out, self.weight3.cuda(), 1, 0, self.group)
+        # out = F.conv2d(out, self.weight3.cuda(), stride=1, padding=0)
         # out = self.conv3(out)
         out = self.bn3(out)
 

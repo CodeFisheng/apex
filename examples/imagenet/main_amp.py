@@ -253,7 +253,7 @@ def main():
             # save ckpt at every epoch
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
-            save_checkpoint({
+            save_checkpoint(epoch + 1, {
                 'epoch': epoch + 1,
                 'arch': args.arch,
                 'state_dict': model.state_dict(),
@@ -472,10 +472,11 @@ def validate(val_loader, model, criterion):
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
+def save_checkpoint(epoch, state, is_best, filename='checkpoint.pth.tar'):
+    filename1 = filename + str(epoch)
+    torch.save(state, filename1)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename1, 'model_best.pth.tar')
 
 
 class AverageMeter(object):
@@ -500,6 +501,10 @@ def adjust_learning_rate(optimizer, epoch, step, len_epoch):
     """LR schedule that should yield 76% converged accuracy with batch size 256"""
     factor = epoch // 30
 
+    # adjust for bp tape, or try 37
+    if epoch >= 38:
+        factor = factor + 1
+
     if epoch >= 80:
         factor = factor + 1
 
@@ -509,8 +514,8 @@ def adjust_learning_rate(optimizer, epoch, step, len_epoch):
     if epoch < 5:
         lr = lr*float(1 + step + epoch*len_epoch)/(5.*len_epoch)
 
-    # if(args.local_rank == 0):
-    #     print("epoch = {}, step = {}, lr = {}".format(epoch, step, lr))
+    if(args.local_rank == 0 and step == 1):
+        print("epoch = {}, step = {}, lr = {}".format(epoch, step, lr))
 
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
