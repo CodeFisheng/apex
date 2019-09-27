@@ -2,6 +2,7 @@ import argparse
 import os
 import shutil
 import time
+import math
 
 import torch
 import torch.nn as nn
@@ -338,6 +339,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
         if args.prof >= 0: torch.cuda.nvtx.range_push("Body of iteration {}".format(i))
 
         adjust_learning_rate(optimizer, epoch, i, len(train_loader))
+        # optimizer = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max = (epoch // 9) + 1)
+        # print('albert learning_rate = ', scheduler.get_lr()[0])
 
         # compute output
         if args.prof >= 0: torch.cuda.nvtx.range_push("forward")
@@ -497,6 +500,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
+'''
 def adjust_learning_rate(optimizer, epoch, step, len_epoch):
     """LR schedule that should yield 76% converged accuracy with batch size 256"""
     factor = epoch // 30
@@ -519,7 +523,26 @@ def adjust_learning_rate(optimizer, epoch, step, len_epoch):
 
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+'''
 
+def adjust_learning_rate(optimizer, epoch, step, len_epoch):
+    """LR schedule that should yield 76% converged accuracy with batch size 256"""
+    # def get_lr(eta_min, base_lr, last_epoch, T_max):
+    #     return eta_min + (base_lr - eta_min) * (1 + math.cos(math.pi * last_epoch / T_max)) / 2
+    def get_lr(base_lr, epoch):
+        return base_lr * (0.92 ** epoch)
+
+    lr = get_lr(args.lr, epoch)
+
+    """Warmup"""
+    if epoch < 5:
+        lr = lr*float(1 + step + epoch*len_epoch)/(5.*len_epoch)
+
+    # if(args.local_rank == 0):
+    #     print("epoch = {}, step = {}, lr = {}".format(epoch, step, lr))
+
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""

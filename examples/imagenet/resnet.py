@@ -101,15 +101,15 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         # TODO
-        out = self.dconv2(out, self.weight2.cuda(), self.stride, 1, self.group)
-        # out = F.conv2d(out, self.weight2.cuda(), stride=self.stride, padding=1)
+        # out = self.dconv2(out, self.weight2.cuda(), self.stride, 1, self.group)
+        out = F.conv2d(out, self.weight2.cuda(), stride=self.stride, padding=1)
         # out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
 
         # TODO
-        out = self.dconv3(out, self.weight3.cuda(), 1, 0, self.group)
-        # out = F.conv2d(out, self.weight3.cuda(), stride=1, padding=0)
+        # out = self.dconv3(out, self.weight3.cuda(), 1, 0, self.group)
+        out = F.conv2d(out, self.weight3.cuda(), stride=1, padding=0)
         # out = self.conv3(out)
         out = self.bn3(out)
 
