@@ -501,9 +501,21 @@ def adjust_learning_rate(optimizer, epoch, step, len_epoch):
     """LR schedule that should yield 76% converged accuracy with batch size 256"""
     factor = epoch // 30
 
-    # adjust for bp tape, or try 37
-    if epoch >= 38:
-        factor = factor + 1
+    # adjust for bp tape
+    # 1/3 conv
+    # if (epoch >= 47 and epoch <= 59):
+    #     factor = factor + 0.5
+
+    # if (epoch >= 70 and epoch <= 79):
+    #     factor = factor + 0.5
+
+    # 2/3 conv
+    # if (epoch >= 41 and epoch < 47):
+    #     factor = factor + 0.25
+    # if (epoch >= 47 and epoch < 53):
+    #     factor = factor + 0.5
+    # if (epoch >= 53 and epoch <= 59):
+    #     factor = factor + 0.75
 
     if epoch >= 80:
         factor = factor + 1
