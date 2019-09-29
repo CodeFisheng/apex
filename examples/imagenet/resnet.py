@@ -94,8 +94,8 @@ class Bottleneck(nn.Module):
         identity = x
 
         # TODO
-        out = self.dconv1(x, self.weight1.cuda(), 1, 0, self.group)
-        # out = F.conv2d(x, self.weight1.cuda(), stride=1, padding=0)
+        # out = self.dconv1(x, self.weight1.cuda(), 1, 0, self.group)
+        out = F.conv2d(x, self.weight1.cuda(), stride=1, padding=0)
         # out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
@@ -108,8 +108,8 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         # TODO
-        # out = self.dconv3(out, self.weight3.cuda(), 1, 0, self.group)
-        out = F.conv2d(out, self.weight3.cuda(), stride=1, padding=0)
+        out = self.dconv3(out, self.weight3.cuda(), 1, 0, self.group)
+        # out = F.conv2d(out, self.weight3.cuda(), stride=1, padding=0)
         # out = self.conv3(out)
         out = self.bn3(out)
 

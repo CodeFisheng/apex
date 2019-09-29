@@ -339,7 +339,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         if args.prof >= 0: torch.cuda.nvtx.range_push("Body of iteration {}".format(i))
 
         adjust_learning_rate(optimizer, epoch, i, len(train_loader))
-        # optimizer = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max = (epoch // 9) + 1)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, 1252, eta_min=0.0004)
         # print('albert learning_rate = ', scheduler.get_lr()[0])
 
         # compute output
@@ -361,6 +361,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         if args.prof >= 0: torch.cuda.nvtx.range_push("optimizer.step()")
         optimizer.step()
+        # scheduler.step()
         if args.prof >= 0: torch.cuda.nvtx.range_pop()
 
         if i%args.print_freq == 0:
@@ -500,8 +501,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-'''
-def adjust_learning_rate(optimizer, epoch, step, len_epoch):
+def adjust_learning_rate2(optimizer, epoch, step, len_epoch):
     """LR schedule that should yield 76% converged accuracy with batch size 256"""
     factor = epoch // 30
 
@@ -514,29 +514,36 @@ def adjust_learning_rate(optimizer, epoch, step, len_epoch):
 
     lr = args.lr*(0.1**factor)
 
-    """Warmup"""
+    # """Warmup"""
     if epoch < 5:
         lr = lr*float(1 + step + epoch*len_epoch)/(5.*len_epoch)
 
     if(args.local_rank == 0 and step == 1):
         print("epoch = {}, step = {}, lr = {}".format(epoch, step, lr))
 
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-'''
-
 def adjust_learning_rate(optimizer, epoch, step, len_epoch):
-    """LR schedule that should yield 76% converged accuracy with batch size 256"""
-    # def get_lr(eta_min, base_lr, last_epoch, T_max):
-    #     return eta_min + (base_lr - eta_min) * (1 + math.cos(math.pi * last_epoch / T_max)) / 2
+
     def get_lr(base_lr, epoch):
-        return base_lr * (0.92 ** epoch)
+        rate = 0.9261187281287935
+        return base_lr * (rate ** epoch)
+        if epoch < 30:
+            return base_lr * (1 + math.cos(math.pi * epoch / 10)) / 2
+        elif epoch < 60 and epoch >= 30:
+            return base_lr * 0.1 * (1 + math.cos(math.pi * epoch / 10)) / 2
+        elif epoch < 80 and epoch >= 60:
+            return base_lr * 0.01 * (1 + math.cos(math.pi * epoch / 10)) / 2
+        elif epoch >= 80:
+            return base_lr * 0.001 * (1 + math.cos(math.pi * epoch / 10)) / 2
+
 
     lr = get_lr(args.lr, epoch)
 
     """Warmup"""
     if epoch < 5:
         lr = lr*float(1 + step + epoch*len_epoch)/(5.*len_epoch)
+    # """Warmup"""
+    # if epoch >= 40 and epoch < 45:
+    #     lr = lr*float(1 + step + (epoch - 40)*len_epoch)/(5.*len_epoch)
 
     # if(args.local_rank == 0):
     #     print("epoch = {}, step = {}, lr = {}".format(epoch, step, lr))
