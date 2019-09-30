@@ -9,12 +9,18 @@ class DecompConv2d(Function):
         super(DecompConv2d, self).__init__()
 
     @staticmethod
-    def forward(cxt, input, weight, stride=1, padding=0, group=1):
+    def forward(cxt, input, weight, avg_buffer, stride=1, padding=0, group=1):
         # print('DecompConv2d Forward. ')
         # print(input.shape)
         new_input = torch.mean(input.view(input.shape[0]//group, group, input.shape[1], input.shape[2], input.shape[3]), dim=0)#.contiguous().view(group, input.shape[1], input.shape[2], input.shape[3])
         # print(new_input.shape)
         # assert(0==1)
+        eta = 0.997
+        if torch.eq(avg_buffer, 0).all() == True:
+            avg_buffer.data = new_input
+        else:
+            delta = (1-eta) * (new_input-avg_buffer)
+            avg_buffer.data += delta
         cxt.save_for_backward(new_input, weight)
         # cxt.save_for_backward(input, weight)
         cxt.stride = stride
@@ -47,7 +53,7 @@ class DecompConv2d(Function):
         # assert(0==1)
         grad_weight = F.grad.conv2d_weight(input, weight.shape, new_grad_outputs, stride=stride, padding=padding)
         # del new_input
-        return grad_input, grad_weight, None, None, None
+        return grad_input, grad_weight, None, None, None, None
 
 def main():
     print('-------- demo --------')

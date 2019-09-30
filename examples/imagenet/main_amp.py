@@ -185,7 +185,7 @@ def main():
                 checkpoint = torch.load(args.resume, map_location = lambda storage, loc: storage.cuda(args.gpu))
                 args.start_epoch = checkpoint['epoch']
                 best_prec1 = checkpoint['best_prec1']
-                model.load_state_dict(checkpoint['state_dict'])
+                model.load_state_dict(checkpoint['state_dict'], strict=False)
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 print("=> loaded checkpoint '{}' (epoch {})"
                       .format(args.resume, checkpoint['epoch']))
@@ -226,12 +226,12 @@ def main():
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler, collate_fn=fast_collate)
+        num_workers=args.workers, pin_memory=True, drop_last=True, sampler=train_sampler, collate_fn=fast_collate)
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True,
+        num_workers=args.workers, pin_memory=True, drop_last=True,
         sampler=val_sampler,
         collate_fn=fast_collate)
 

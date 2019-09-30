@@ -89,6 +89,8 @@ class Bottleneck(nn.Module):
         # weight 3
         k = torch.sqrt(torch.tensor(1/(planes * 1 * 1)))
         self.weight3 = nn.Parameter(torch.empty((self.expansion*planes, planes, 1, 1)).uniform_(-k, k))
+        self.activ_avg = torch.zeros((group, planes, 128*16//planes, 128*16//planes))
+        self.register_buffer('avg_buffer', self.activ_avg)
 
     def forward(self, x):
         identity = x
@@ -108,7 +110,7 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         # TODO
-        out = self.dconv3(out, self.weight3.cuda(), 1, 0, self.group)
+        out = self.dconv3(out, self.weight3.cuda(), self.avg_buffer, 1, 0, self.group)
         # out = F.conv2d(out, self.weight3.cuda(), stride=1, padding=0)
         # out = self.conv3(out)
         out = self.bn3(out)
